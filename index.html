@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<title>DATA URI TRANSFORMATION</title>
+<link rel="stylesheet" type="text/css" media="all" href="styles.css" />
+<script src="indexdb.js"></script>
+</head>
+<body>
+
+<form id="upload" action="index.html" method="POST" enctype="multipart/form-data">
+<fieldset>
+<legend>HTML File Upload</legend>
+
+<input type="hidden" id="MAX_FILE_SIZE" name="MAX_FILE_SIZE" value="300000" />
+<div>
+	<label for="fileselect">Files to upload:</label>
+	<input type="file" id="fileselect" name="fileselect[]" multiple="multiple" />
+	<div id="filedrag">or drop files here</div>
+</div>
+
+<div id="submitbutton">
+	<button type="submit">Upload Files</button>
+</div>
+
+</fieldset>
+
+</form>
+
+<form id="fichier_html" enctype="multipart/form-data">
+<input type="file" id="file_html" name="file_html" />
+</form>
+
+<div id="messages">
+<p>Status Messages</p>
+</div>
+ <ul id="test_affichage"></ul>
+ <textarea id="text">
+ 
+ </textarea>
+ <img src="./logo.jpg"/>
+</body>
+<script src="filedrag.js"></script>
+<script>
+function escapeRegExp(str) {
+  return str.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, "\\$&");
+}
+
+
+function replaceAll(find, replace, str) {
+  return str.replace(new RegExp(escapeRegExp(find), 'g'), replace);
+}
+
+function StringtoXML(text){
+if (window.ActiveXObject){
+var doc=new ActiveXObject('Microsoft.XMLDOM');
+doc.async='false';
+doc.loadXML(text);
+} else {
+var parser = new DOMParser().parseFromString(text,'text/html');
+var doc =  parser.documentElement;
+}
+return doc;
+}
+
+function getElementsBySrc(doc, tagName, attributeName, attributeValue, changeValue) {
+  var i, n, objs=[], els=doc.getElementsByTagName(tagName), len=els.length, src="";
+  for (i=0; i<len; i++) {
+    n = els[i];
+	src = n.getAttribute('src');
+	if(src!==null)
+	{
+		var nom = src.split('/');
+		var nom_fichier = nom[nom.length-1];
+		if ((nom_fichier==attributeValue)) {
+		  els[i].setAttribute('src', changeValue);	
+		//objs[0].setAttribute('src', changeValue);	 
+			}
+		}
+	}
+
+  return objs;
+}
+
+function getElementsByHref(doc, tagName, attributeName, attributeValue, changeValue) {
+  var i, n, objs=[], els=doc.getElementsByTagName(tagName), len=els.length, src="";
+  for (i=0; i<len; i++) {
+    n = els[i];
+	href = n.getAttribute('href');
+	if(href!==null)
+	{
+		var nom = href.split('/');
+		var nom_fichier = nom[nom.length-1];
+		if ((nom_fichier==attributeValue)) {
+			els[i].setAttribute('href', changeValue);	  
+			}
+		}
+	}
+
+  return objs;
+}
+
+function changetoDataURI(doc, name, dataURI, ext)
+{
+	switch(ext)
+	{
+		case 'js':
+		getElementsBySrc(doc, 'script', 'src', name, dataURI);
+		break;
+		case 'css':
+		getElementsByHref(doc, 'link', 'href', name, dataURI);
+		break;
+		case 'png':
+		case 'jpg':
+		case 'jpeg':
+		getElementsBySrc(doc, 'img', 'src', name, dataURI);
+		break;
+	}
+}
+
+(function (view){
+document = view.document;
+document.getElementById('file_html').onchange=function(){
+	get_blob = function() {
+	return view.Blob;
+	}
+    var reader = new FileReader();
+    reader.onload = function() {
+	   var  doc = (StringtoXML(reader.result));
+		for(i in donnee)
+			changetoDataURI(doc, donnee[i]['name'], donnee[i]['dataURI'], donnee[i]['ext'] );
+		
+		var txt = (doc.outerHTML);
+		var bb = get_blob();
+		var blob = new bb([txt], {type: "application/html;charset=" + document.characterSet});
+		saveAs(blob, "index.html");
+      };
+	  
+    reader.readAsText(this.files[0]);
+}
+}(self));
+</script>
+</html>
